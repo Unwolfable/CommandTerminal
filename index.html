@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>NX-OS Kernel System</title>
+    <style>
+      body {
+        margin: 0;
+        background: black;
+        color: lime;
+        font-family: monospace;
+        overflow: hidden;
+      }
+
+      #terminal {
+        padding: 10px;
+        height: 100vh;
+        overflow-y: auto;
+        white-space: pre-wrap;
+      }
+
+      .input-line {
+        color: white;
+      }
+
+      .draggable {
+        position: absolute;
+        cursor: move;
+        top: 50px;
+        left: 50px;
+        z-index: 100;
+      }
+
+      .header {
+        background-color: #444;
+        padding: 10px;
+        color: white;
+      }
+
+      .body {
+        padding: 10px;
+        color: white;
+        background-color: #222;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="terminal"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.11.0/jszip.min.js"></script>
+    <script src="terminal.js"></script>
+  </body>
+</html>
