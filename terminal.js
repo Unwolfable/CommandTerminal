@@ -20,11 +20,15 @@ function exportFS(path) {
   if (!parentDir) return addLine(`export: invalid path`, 'red');
 
   const target = parentDir.children[targetName];
+
   if (!target) return addLine(`export: ${path} not found`, 'red');
 
+  // If it's a file
   if (target.type === 'text') {
     let downloadName = targetName;
-    if (!/\.[a-zA-Z0-9]+$/.test(downloadName)) downloadName += '.txt';
+    if (!/\.[a-zA-Z0-9]+$/.test(downloadName)) {
+      downloadName += '.txt'; // default extension if none
+    }
     const blob = new Blob([target.content], { type: 'text/plain' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -34,12 +38,15 @@ function exportFS(path) {
     return;
   }
 
+  // If it's a directory
   if (target.type === 'dir') {
     const zip = new JSZip();
+
     function addDirToZip(dir, zipObj) {
       for (let key in dir.children) {
         if (dir.children[key].type === 'dir') {
-          addDirToZip(dir.children[key], zipObj.folder(key));
+          const subFolder = zipObj.folder(key);
+          addDirToZip(dir.children[key], subFolder);
         } else if (dir.children[key].type === 'text') {
           let fname = key;
           if (!/\.[a-zA-Z0-9]+$/.test(fname)) fname += '.txt';
@@ -47,7 +54,9 @@ function exportFS(path) {
         }
       }
     }
+
     addDirToZip(target, zip);
+
     zip.generateAsync({ type: 'blob' }).then((content) => {
       const a = document.createElement('a');
       a.href = URL.createObjectURL(content);
@@ -210,48 +219,68 @@ setInterval(() => {
 // ===== RENDER =====
 function render() {
   terminal.innerHTML = '';
+
   lines.forEach((l) => {
     const div = document.createElement('div');
     div.textContent = l.text;
     div.style.color = l.color;
     terminal.appendChild(div);
   });
+
   const inputLine = document.createElement('div');
   const cursor = cursorVisible ? '_' : ' ';
   inputLine.textContent = `${getPrompt()} ${currentInput}${cursor}`;
   inputLine.style.color = 'white';
   terminal.appendChild(inputLine);
+
   terminal.scrollTop = terminal.scrollHeight;
 }
 
 // ===== RESET =====
 function factoryReset() {
-  fs = { root: { type: 'dir', children: JSON.parse(JSON.stringify(defaultChildren)) }, cwd: ['root'] };
+  fs = {
+    root: {
+      type: 'dir',
+      children: JSON.parse(JSON.stringify(defaultChildren)),
+    },
+    cwd: ['root'],
+  };
+
   history = [];
   lines = [];
   localStorage.removeItem('nxos_save');
+
   addLine('System has been reset to factory settings.', 'green');
   render();
 }
 
 // ===== OPEN FILE =====
 function openFile(fileName) {
-  // draggable/resizable HTML popup logic stays unchanged
+  // ... your draggable/resizable popup logic unchanged
 }
 
 // ===== COMMANDS =====
 function runCommand(cmd) {
   if (!cmd.trim()) return;
+
   let cwd = getCWD();
   let args = cmd.trim().split(/\s+/);
   let command = args[0]?.toLowerCase();
+
   addLine(`${getPrompt()} ${cmd}`, 'white');
 
   if (cmd.includes('>')) {
     let [left, right] = cmd.split('>');
     let filename = right.trim();
-    if (cwd.children[filename]) return addLine('File exists (no overwrite)', 'red');
-    let content = left.replace(/^echo\s+/, '').trim().replace(/^"|"$/g, '');
+
+    if (cwd.children[filename]) {
+      return addLine('File exists (no overwrite)', 'red');
+    }
+
+    let content = left
+      .replace(/^echo\s+/, '')
+      .trim()
+      .replace(/^"|"$/g, '');
     cwd.children[filename] = { type: 'text', content };
     addLine(`Wrote to ${filename}`, 'green');
     saveState();
@@ -259,7 +288,7 @@ function runCommand(cmd) {
   }
 
   switch (command) {
-    // commands like cd, ls, mkdir, touch, rm, rmdir, cp, mv, open, export, import, clear, history
+    // ... all commands unchanged
   }
 
   history.push(cmd);
@@ -295,13 +324,15 @@ document.addEventListener('keydown', async (e) => {
   }
 
   if (e.key === 'ArrowUp') {
-    if (historyIndex > 0) historyIndex--, (currentInput = history[historyIndex]);
+    if (historyIndex > 0)
+      historyIndex--, (currentInput = history[historyIndex]);
     render();
     return;
   }
 
   if (e.key === 'ArrowDown') {
-    if (historyIndex < history.length - 1) historyIndex++, (currentInput = history[historyIndex]);
+    if (historyIndex < history.length - 1)
+      historyIndex++, (currentInput = history[historyIndex]);
     else currentInput = '';
     render();
     return;
@@ -316,9 +347,18 @@ document.addEventListener('keydown', async (e) => {
 // ===== INIT =====
 (async () => {
   addLine('ALE NXOS [Version 1.0.0]', 'cyan');
-  addLine('(c) 2026 Artificial Labs & Engineering. All rights reserved.', 'cyan');
+  addLine(
+    '(c) 2026 Artificial Labs & Engineering. All rights reserved.',
+    'cyan'
+  );
   addLine('', 'cyan');
   addLine('Initializing virtual filesystem...', 'yellow');
-  try { await initFS(); } catch (e) { addLine('Error initializing filesystem: ' + e.message, 'red'); }
+
+  try {
+    await initFS();
+  } catch (e) {
+    addLine('Error initializing filesystem: ' + e.message, 'red');
+  }
+
   render();
 })();
